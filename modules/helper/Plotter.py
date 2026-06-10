@@ -2,33 +2,28 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-def plot_training_metrics(data):
+def plot_training_metrics(data, min_value=None):
     """
-    Accepts:
-    - list of dicts (preferred)
-    - dict of lists
-    - list of lists (ordered)
+    Parameters
+    ----------
+    data:
+        list of dicts / dict of lists / list of lists
 
-    Converts to pandas DataFrame and plots:
-    - Loss (train vs val)
-    - Accuracy
-    - Precision
-    - Recall
-    - F1 score
+    min_value:
+        dict like {"train_loss": 0.8, "val_accuracy": 0.5}
+        Filters returned df only (plots always use full data)
     """
 
     # ---------------------------
-    # Normalize input to DataFrame
+    # Normalize input
     # ---------------------------
     if isinstance(data, dict):
         df = pd.DataFrame(data)
 
     elif isinstance(data, list):
-        # list of dicts
         if len(data) > 0 and isinstance(data[0], dict):
             df = pd.DataFrame(data)
         else:
-            # assume list of lists with fixed order
             cols = [
                 "epoch",
                 "train_loss", "val_loss",
@@ -45,48 +40,25 @@ def plot_training_metrics(data):
     sns.set_style("darkgrid")
 
     # ---------------------------
-    # Loss Plot
+    # SINGLE FIGURE WITH SUBPLOTS
     # ---------------------------
-    plt.figure()
-    sns.lineplot(data=df, x="epoch", y="train_loss", label="train_loss")
-    sns.lineplot(data=df, x="epoch", y="val_loss", label="val_loss")
-    plt.title("Loss Curve")
-    plt.show()
+    fig, axes = plt.subplots(3, 2, figsize=(14, 12))
+    axes = axes.flatten()
 
-    # ---------------------------
-    # Accuracy Plot
-    # ---------------------------
-    plt.figure()
-    sns.lineplot(data=df, x="epoch", y="train_accuracy", label="train_accuracy")
-    sns.lineplot(data=df, x="epoch", y="val_accuracy", label="val_accuracy")
-    plt.title("Accuracy Curve")
-    plt.show()
+    def plot_pair(ax, y1, y2, title):
+        sns.lineplot(data=df, x="epoch", y=y1, label=y1, ax=ax)
+        sns.lineplot(data=df, x="epoch", y=y2, label=y2, ax=ax)
+        ax.set_title(title)
 
-    # ---------------------------
-    # Precision Plot
-    # ---------------------------
-    plt.figure()
-    sns.lineplot(data=df, x="epoch", y="train_precision", label="train_precision")
-    sns.lineplot(data=df, x="epoch", y="val_precision", label="val_precision")
-    plt.title("Precision Curve")
-    plt.show()
+    plot_pair(axes[0], "train_loss", "val_loss", "Loss")
+    plot_pair(axes[1], "train_accuracy", "val_accuracy", "Accuracy")
+    plot_pair(axes[2], "train_precision", "val_precision", "Precision")
+    plot_pair(axes[3], "train_recall", "val_recall", "Recall")
+    plot_pair(axes[4], "train_f1", "val_f1", "F1 Score")
 
-    # ---------------------------
-    # Recall Plot
-    # ---------------------------
-    plt.figure()
-    sns.lineplot(data=df, x="epoch", y="train_recall", label="train_recall")
-    sns.lineplot(data=df, x="epoch", y="val_recall", label="val_recall")
-    plt.title("Recall Curve")
-    plt.show()
+    axes[5].axis("off")  # unused subplot
 
-    # ---------------------------
-    # F1 Plot
-    # ---------------------------
-    plt.figure()
-    sns.lineplot(data=df, x="epoch", y="train_f1", label="train_f1")
-    sns.lineplot(data=df, x="epoch", y="val_f1", label="val_f1")
-    plt.title("F1 Score Curve")
+    plt.tight_layout()
     plt.show()
-
+    
     return df
