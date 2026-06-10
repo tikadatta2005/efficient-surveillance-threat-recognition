@@ -17,8 +17,11 @@ class Architecture(nn.Module):
         super().__init__()
         self.blocks = nn.ModuleList()
 
-    def add(self, module):
-        self.blocks.append(module)
+    def add(self, *modules):
+        if len(modules) == 1:
+            self.blocks.append(modules[0])
+        else:
+            self.blocks.append(nn.Sequential(*modules))
         return self
 
     def residual(self, *layers):
