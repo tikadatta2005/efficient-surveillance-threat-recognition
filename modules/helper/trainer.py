@@ -176,7 +176,7 @@ class Trainer:
             }
 
             history.append(epoch_result)
-            if self.print_every % epoch == 0:
+            if  epoch % self.print_every == 0:
                 print(
                     f"Epoch [{epoch}/{epochs}] | "
                     f"Train Loss: {epoch_result['train_loss']:.4f} | "
