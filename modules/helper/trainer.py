@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 from modules.helper.Metrics import Metrics
-
+import os
 
 class Trainer:
 
@@ -54,6 +54,8 @@ class Trainer:
 
         if epoch % self.save_checkpoints != 0:
             return
+        
+        os.makedirs(self.save_dir, exist_ok=True)
 
         path = f"{self.save_dir}/model_epoch_{epoch}.pt"
 
