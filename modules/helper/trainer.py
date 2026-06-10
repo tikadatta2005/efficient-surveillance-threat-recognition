@@ -1,7 +1,8 @@
 import torch
 from torch import nn
-from modules.helper.Metrics import Metrics
 import os
+from modules.helper.Metrics import Metrics
+
 
 class Trainer:
 
@@ -24,13 +25,9 @@ class Trainer:
         self.optimizer = optimizer
 
         self.num_classes = num_classes
-
         self.criterion = criterion or nn.CrossEntropyLoss()
 
-        self.device = device or (
-            "cuda" if torch.cuda.is_available() else "cpu"
-        )
-
+        self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
         self.model.to(self.device)
 
         self.save_dir = save_dir
@@ -42,10 +39,9 @@ class Trainer:
     # ----------------------------------
 
     def save(self, epoch):
-        
         if self.save_dir is None:
             return
-        
+
         if not isinstance(self.save_checkpoints, int):
             return
 
@@ -54,16 +50,16 @@ class Trainer:
 
         if epoch % self.save_checkpoints != 0:
             return
-        
+
         os.makedirs(self.save_dir, exist_ok=True)
 
-        path = f"{self.save_dir}/model_epoch_{epoch}.pt"
+        path = os.path.join(self.save_dir, f"model_epoch_{epoch}.pt")
 
         torch.save(
             {
                 "epoch": epoch,
                 "model": self.model.state_dict(),
-                "optimizer": self.optimizer.state_dict()
+                "optimizer": self.optimizer.state_dict(),
             },
             path
         )
@@ -73,35 +69,30 @@ class Trainer:
     # ----------------------------------
 
     def train_one_epoch(self, epoch):
-
         self.model.train()
 
         metrics = Metrics(self.num_classes)
-
-        total_loss = 0
+        total_loss = 0.0
 
         for step, (x, y) in enumerate(self.train_loader):
-
             x = x.to(self.device)
             y = y.to(self.device)
 
             self.optimizer.zero_grad()
 
             outputs = self.model(x)
-
             loss = self.criterion(outputs, y)
 
             loss.backward()
-
             self.optimizer.step()
 
             total_loss += loss.item()
 
             preds = torch.argmax(outputs, dim=1)
-
             metrics.update(preds, y)
 
         metrics.train_loss = total_loss / len(self.train_loader)
+        metrics.compute() if hasattr(metrics, "compute") else None
 
         return metrics
 
@@ -110,31 +101,26 @@ class Trainer:
     # ----------------------------------
 
     def validate(self):
-
         self.model.eval()
 
         metrics = Metrics(self.num_classes)
-
-        total_loss = 0
+        total_loss = 0.0
 
         with torch.no_grad():
-
             for x, y in self.val_loader:
-
                 x = x.to(self.device)
                 y = y.to(self.device)
 
                 outputs = self.model(x)
-
                 loss = self.criterion(outputs, y)
 
                 total_loss += loss.item()
 
                 preds = torch.argmax(outputs, dim=1)
-
                 metrics.update(preds, y)
 
         metrics.val_loss = total_loss / len(self.val_loader)
+        metrics.compute() if hasattr(metrics, "compute") else None
 
         return metrics
 
@@ -143,19 +129,16 @@ class Trainer:
     # ----------------------------------
 
     def fit(self, epochs):
-
         history = []
 
         for epoch in range(1, epochs + 1):
 
             train_metrics = self.train_one_epoch(epoch)
-
             val_metrics = self.validate()
 
             self.save(epoch)
 
             epoch_result = {
-
                 "epoch": epoch,
 
                 "train_loss": train_metrics.train_loss,
@@ -171,12 +154,16 @@ class Trainer:
                 "val_recall": val_metrics.recall(),
                 "val_f1": val_metrics.f1(),
 
-                "confusion_matrix":
-                    val_metrics.confusion_matrix.clone()
+                "confusion_matrix": (
+                    val_metrics.confusion_matrix.detach().cpu().clone()
+                    if torch.is_tensor(val_metrics.confusion_matrix)
+                    else val_metrics.confusion_matrix.copy()
+                )
             }
 
             history.append(epoch_result)
-            if  epoch % self.print_every == 0:
+
+            if epoch % self.print_every == 0:
                 print(
                     f"Epoch [{epoch}/{epochs}] | "
                     f"Train Loss: {epoch_result['train_loss']:.4f} | "
