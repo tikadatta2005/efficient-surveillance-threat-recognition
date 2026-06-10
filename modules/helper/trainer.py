@@ -99,13 +99,6 @@ class Trainer:
 
             metrics.update(preds, y)
 
-            if step % self.print_every == 0:
-                print(
-                    f"Epoch {epoch} "
-                    f"Step {step} "
-                    f"Loss {loss.item():.4f}"
-                )
-
         metrics.train_loss = total_loss / len(self.train_loader)
 
         return metrics
@@ -183,12 +176,13 @@ class Trainer:
             history.append(epoch_result)
 
             print(
-                f"\nEpoch {epoch}"
-                f" | Train Loss: {epoch_result['train_loss']:.4f}"
-                f" | Val Loss: {epoch_result['val_loss']:.4f}"
-                f" | Train Acc: {epoch_result['train_accuracy']:.4f}"
-                f" | Val Acc: {epoch_result['val_accuracy']:.4f}"
-                f" | Val F1: {epoch_result['val_f1']:.4f}\n"
+                f"Epoch [{epoch}/{epochs}] | "
+                f"Train Loss: {epoch_result['train_loss']:.4f} | "
+                f"Val Loss: {epoch_result['val_loss']:.4f} | "
+                f"Train Acc: {epoch_result['train_accuracy']:.4f} | "
+                f"Val Acc: {epoch_result['val_accuracy']:.4f} | "
+                f"Train F1: {epoch_result['train_f1']:.4f} | "
+                f"Val F1: {epoch_result['val_f1']:.4f}"
             )
 
         return history
