@@ -62,3 +62,84 @@ def plot_training_metrics(data, min_value=None):
     plt.show()
     
     return df
+
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+
+def plot_testing_history(test_scores):
+    """
+    Plot testing metrics across epochs.
+
+    Parameters
+    ----------
+    test_scores:
+        List of dicts returned by Tester.test()
+    """
+
+    # ---------------------------
+    # Extract metrics
+    # ---------------------------
+    history = []
+
+    for epoch, result in enumerate(test_scores, start=1):
+        history.append({
+            "epoch": epoch,
+            "test_loss": result["test_loss"],
+            "test_accuracy": result["test_accuracy"],
+            "test_precision": result["test_precision"],
+            "test_recall": result["test_recall"],
+            "test_f1": result["test_f1"]
+        })
+
+    df = pd.DataFrame(history)
+
+
+    sns.set_style("darkgrid")
+
+
+    # ---------------------------
+    # Plot all metrics
+    # ---------------------------
+    fig, axes = plt.subplots(3, 2, figsize=(14, 12))
+    axes = axes.flatten()
+
+
+    metrics = [
+        "test_loss",
+        "test_accuracy",
+        "test_precision",
+        "test_recall",
+        "test_f1"
+    ]
+
+    titles = [
+        "Test Loss",
+        "Test Accuracy",
+        "Test Precision",
+        "Test Recall",
+        "Test F1 Score"
+    ]
+
+
+    for ax, metric, title in zip(axes, metrics, titles):
+        sns.lineplot(
+            data=df,
+            x="epoch",
+            y=metric,
+            ax=ax
+        )
+
+        ax.set_title(title)
+        ax.set_xlabel("Epoch")
+        ax.set_ylabel(metric)
+
+
+    axes[-1].axis("off")
+
+    plt.tight_layout()
+    plt.show()
+
+
+    return df
