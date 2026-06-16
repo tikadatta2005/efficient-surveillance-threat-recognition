@@ -63,7 +63,7 @@ class Trainer:
             self.best_val_acc = max(self.best_val_acc, val_accuracy)
             self.best_val_f1 = max(self.best_val_f1, val_f1)
 
-            path = os.path.join(self.save_dir, "best_model.pt")
+            path = os.path.join(self.save_dir, f"model_epoch_{epoch}.pt")
 
             torch.save(
                 {
@@ -85,7 +85,7 @@ class Trainer:
 
             if epoch % self.save_checkpoints == 0:
 
-                path = os.path.join(self.save_dir, f"epoch_{epoch}.pt")
+                path = os.path.join(self.save_dir, f"model_epoch_{epoch}.pt")
 
                 torch.save(
                     {
