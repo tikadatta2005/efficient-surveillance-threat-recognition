@@ -3,13 +3,14 @@ from torch import nn
 
 
 class ResidualBlock(nn.Module):
-
-    def __init__(self, *layers):
+    def __init__(self, conv_layers, shortcut=None):
         super().__init__()
-        self.layers = nn.Sequential(*layers)
+        self.conv = nn.Sequential(*conv_layers)
+        self.shortcut = shortcut
 
     def forward(self, x):
-        return x + self.layers(x)
+        identity = x if self.shortcut is None else self.shortcut(x)
+        return identity + self.conv(x)
 
 class Architecture(nn.Module):
 
