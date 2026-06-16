@@ -34,35 +34,70 @@ class Trainer:
         self.save_checkpoints = save_checkpoints
         self.print_every = print_every
 
+        # ----------------------------
+        # BEST METRICS TRACKING
+        # ----------------------------
+        self.best_val_acc = -float("inf")
+        self.best_val_f1 = -float("inf")
+
     # ----------------------------------
-    # SAVE
+    # SAVE LOGIC (HYBRID)
     # ----------------------------------
 
-    def save(self, epoch):
+    def save(self, epoch, val_accuracy, val_f1):
+
         if self.save_dir is None:
-            return
-
-        if not isinstance(self.save_checkpoints, int):
-            return
-
-        if self.save_checkpoints <= 0:
-            return
-
-        if epoch % self.save_checkpoints != 0:
             return
 
         os.makedirs(self.save_dir, exist_ok=True)
 
-        path = os.path.join(self.save_dir, f"model_epoch_{epoch}.pt")
-
-        torch.save(
-            {
-                "epoch": epoch,
-                "model": self.model.state_dict(),
-                "optimizer": self.optimizer.state_dict(),
-            },
-            path
+        # ----------------------------
+        # BEST MODEL CHECK
+        # ----------------------------
+        is_best = (
+            val_accuracy > self.best_val_acc
+            or val_f1 > self.best_val_f1
         )
+
+        if is_best:
+            self.best_val_acc = max(self.best_val_acc, val_accuracy)
+            self.best_val_f1 = max(self.best_val_f1, val_f1)
+
+            path = os.path.join(self.save_dir, "best_model.pt")
+
+            torch.save(
+                {
+                    "epoch": epoch,
+                    "model": self.model.state_dict(),
+                    "optimizer": self.optimizer.state_dict(),
+                    "val_accuracy": val_accuracy,
+                    "val_f1": val_f1,
+                    "type": "best"
+                },
+                path
+            )
+            return  # skip periodic save if best saved
+
+        # ----------------------------
+        # PERIODIC CHECKPOINT
+        # ----------------------------
+        if isinstance(self.save_checkpoints, int) and self.save_checkpoints > 0:
+
+            if epoch % self.save_checkpoints == 0:
+
+                path = os.path.join(self.save_dir, f"epoch_{epoch}.pt")
+
+                torch.save(
+                    {
+                        "epoch": epoch,
+                        "model": self.model.state_dict(),
+                        "optimizer": self.optimizer.state_dict(),
+                        "val_accuracy": val_accuracy,
+                        "val_f1": val_f1,
+                        "type": "checkpoint"
+                    },
+                    path
+                )
 
     # ----------------------------------
     # TRAIN ONE EPOCH
@@ -136,7 +171,14 @@ class Trainer:
             train_metrics = self.train_one_epoch(epoch)
             val_metrics = self.validate()
 
-            self.save(epoch)
+            # ----------------------------
+            # SAVE (HYBRID)
+            # ----------------------------
+            self.save(
+                epoch,
+                val_metrics.accuracy(),
+                val_metrics.f1()
+            )
 
             epoch_result = {
                 "epoch": epoch,
