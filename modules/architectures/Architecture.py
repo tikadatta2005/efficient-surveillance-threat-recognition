@@ -2,6 +2,18 @@ import torch
 from torch import nn
 
 
+class Shortcut(nn.Module):
+    def __init__(self, in_channels, out_channels, stride=1):
+        super().__init__()
+
+        self.net = nn.Sequential(
+            nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=stride),
+            nn.BatchNorm2d(out_channels)
+        )
+
+    def forward(self, x):
+        return self.net(x)
+
 class ResidualBlock(nn.Module):
     def __init__(self, conv_layers, shortcut=None):
         super().__init__()
