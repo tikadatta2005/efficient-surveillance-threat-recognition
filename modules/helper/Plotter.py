@@ -1,6 +1,7 @@
 import pandas as pd
-import seaborn as sns
 import matplotlib.pyplot as plt
+import seaborn as sns
+
 
 def plot_training_metrics(data, min_value=None):
     """
@@ -35,19 +36,35 @@ def plot_training_metrics(data, min_value=None):
     else:
         raise ValueError("Unsupported data format")
 
-    df = df.sort_values("epoch")
+    df = df.sort_values("epoch").reset_index(drop=True)
 
     sns.set_style("darkgrid")
 
     # ---------------------------
-    # SINGLE FIGURE WITH SUBPLOTS
+    # Plot
     # ---------------------------
     fig, axes = plt.subplots(3, 2, figsize=(14, 12))
     axes = axes.flatten()
 
     def plot_pair(ax, y1, y2, title):
-        sns.lineplot(data=df, x="epoch", y=y1, label=y1, ax=ax)
-        sns.lineplot(data=df, x="epoch", y=y2, label=y2, ax=ax)
+        sns.lineplot(
+            data=df,
+            x="epoch",
+            y=y1,
+            label=y1,
+            marker="o",
+            ax=ax
+        )
+
+        sns.lineplot(
+            data=df,
+            x="epoch",
+            y=y2,
+            label=y2,
+            marker="o",
+            ax=ax
+        )
+
         ax.set_title(title)
 
     plot_pair(axes[0], "train_loss", "val_loss", "Loss")
@@ -56,16 +73,24 @@ def plot_training_metrics(data, min_value=None):
     plot_pair(axes[3], "train_recall", "val_recall", "Recall")
     plot_pair(axes[4], "train_f1", "val_f1", "F1 Score")
 
-    axes[5].axis("off")  # unused subplot
+    axes[5].axis("off")
 
     plt.tight_layout()
     plt.show()
-    
+
+    # ---------------------------
+    # Optional filtering
+    # ---------------------------
+    if min_value:
+        filtered_df = df.copy()
+
+        for metric, value in min_value.items():
+            filtered_df = filtered_df[filtered_df[metric] >= value]
+
+        return filtered_df
+
     return df
 
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
 
 
 def plot_testing_history(test_scores):
@@ -75,7 +100,7 @@ def plot_testing_history(test_scores):
     Parameters
     ----------
     test_scores:
-        List of dicts returned by Tester.test()
+        List of dicts returned by Tester.test_all_checkpoints()
     """
 
     # ---------------------------
@@ -83,9 +108,9 @@ def plot_testing_history(test_scores):
     # ---------------------------
     history = []
 
-    for epoch, result in enumerate(test_scores, start=1):
+    for result in test_scores:
         history.append({
-            "epoch": epoch,
+            "epoch": result["epoch"],
             "test_loss": result["test_loss"],
             "test_accuracy": result["test_accuracy"],
             "test_precision": result["test_precision"],
@@ -95,16 +120,16 @@ def plot_testing_history(test_scores):
 
     df = pd.DataFrame(history)
 
+    # Sort by actual checkpoint epoch
+    df = df.sort_values("epoch").reset_index(drop=True)
 
     sns.set_style("darkgrid")
 
-
     # ---------------------------
-    # Plot all metrics
+    # Plot
     # ---------------------------
     fig, axes = plt.subplots(3, 2, figsize=(14, 12))
     axes = axes.flatten()
-
 
     metrics = [
         "test_loss",
@@ -122,12 +147,13 @@ def plot_testing_history(test_scores):
         "Test F1 Score"
     ]
 
-
     for ax, metric, title in zip(axes, metrics, titles):
+
         sns.lineplot(
             data=df,
             x="epoch",
             y=metric,
+            marker="o",
             ax=ax
         )
 
@@ -135,11 +161,9 @@ def plot_testing_history(test_scores):
         ax.set_xlabel("Epoch")
         ax.set_ylabel(metric)
 
-
     axes[-1].axis("off")
 
     plt.tight_layout()
     plt.show()
-
 
     return df
